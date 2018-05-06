@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="java-flac-encoder">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/Downloads/javaFlacEncoder-0.3.2-all/javaFlacEncoder-0.3.2-all/javaFlacEncoder-0.3.2.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="file://$USER_HOME$/Downloads/javaFlacEncoder-0.3.2-all/javaFlacEncoder-0.3.2-all/javadoc" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="file://$USER_HOME$/Downloads/javaFlacEncoder-0.3.2-all/javaFlacEncoder-0.3.2-all/src" />
+    </SOURCES>
+  </library>
+</component>
