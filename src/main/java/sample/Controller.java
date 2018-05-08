@@ -2,10 +2,7 @@ package sample;
 
 import javafx.event.Event;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TextArea;
+import javafx.scene.control.*;
 import javafx.scene.paint.Paint;
 
 public class Controller {
@@ -19,11 +16,18 @@ public class Controller {
     public TextArea recognizedText;
 
     @FXML
+    public ChoiceBox langChoice;
+
+    @FXML
+    public ProgressBar volumeBar;
+
+    @FXML
     public void onButtonPressed(Event e){
         if(Main.started){
             Main.started = false;
             button1.setText("START Listening");
             statusLabel.setText("Recognizing...");
+            Main.switchFiles();
             Main.recognize1();
 //            String rcsTxt = Main.recognize();
 //            recognizedText.setText(rcsTxt);
@@ -31,6 +35,7 @@ public class Controller {
             statusLabel.setTextFill(Paint.valueOf("#f30a0a"));
         }
         else {
+            Main.languagePref = (String) langChoice.getValue();
             Main.started = true;
             button1.setText("STOP Listening");
             statusLabel.setText("Listening...");
@@ -38,6 +43,8 @@ public class Controller {
             Main.record1();
         }
     }
+
+
 
 
 }

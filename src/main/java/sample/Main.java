@@ -37,6 +37,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 
 import static javax.sound.sampled.AudioSystem.*;
@@ -52,28 +53,33 @@ public class Main extends Application {
     public static SpeechSettings speechSettings;
     public static SpeechClient speechClient;
     public static String buttonLabel = "Start Listening";
-    public static String recognizedText = "Recognized Text";
+    public static String recognizedText = "";
     public static boolean started = false;
+
+    public static String recogFileName = "testfile2.flac";
+    public static String alterNateFileName = "testfile1.flac";
 
     public static Controller ControllerRef =  null;
     public static boolean initialized = false;
+
+    public static String languagePref = "en-US";
 
     @Override
     public void start(final Stage primaryStage) throws Exception{
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/SpeechRecognizer.fxml"));
         Parent root = loader.load();
                 //FXMLLoader.load(getClass().getResource("/SpeechRecognizer.fxml"));
-        primaryStage.setTitle("Speech Recogniser");
 
+        primaryStage.setTitle("Speech Recogniser");
+        ControllerRef = loader.getController();
+        ControllerRef.langChoice.getItems().addAll("en-US", "en-IN", "en-GB", "en-CA", "en-NZ");
+        ControllerRef.langChoice.setValue("en-US");
         primaryStage.setScene(new Scene(root, 800, 600));
         primaryStage.show();
-        ControllerRef = loader.getController();
-        Text t1 = new Text("You can display what the line test. We don't have the label is a test test smashing Uline characters in it. Then deliver was up to a new line, whatever the new line character it if the label has Bostick set to 2 and there's not enough space to display single 9 of 10 in the label was lost a text to a new line."+
-                "You can display what the line test. We don't have the label is a test test smashing Uline characters in it. Then deliver was up to a new line, whatever the new line character it if the label has Bostick set to 2 and there's not enough space to display single 9 of 10 in the label was lost a text to a new line.");
-//        t1.wrappingWidthProperty().bind(ControllerRef.recognizedText.widthProperty());
-//        t1.setWrappingWidth(200);
-//        ControllerRef.recognizedText
-//        ControllerRef.recognizedText.setContent(new Text("You can display what the line test. We don't have the label is a test test smashing Uline characters in it. Then deliver was up to a new line, whatever the new line character it if the label has Bostick set to 2 and there's not enough space to display single 9 of 10 in the label was lost a text to a new line."));
+
+        keepUpdatingVolume();
+
+
         ControllerRef.recognizedText.setText("Click on START Listening to get started");
 
 //        Main.initialise();
@@ -108,7 +114,6 @@ public class Main extends Application {
 //        bgThread.start();
 
     }
-
 
 
     public static void initialise() {
@@ -300,23 +305,30 @@ public class Main extends Application {
     public static String recognize() {
 
         // The path to the audio file to transcribe
-        String fileName = "testfile2.flac";
+//        String fileName = ;
 
             // Reads the audio file into memory
-            Path path = Paths.get(fileName);
+        Path path = Paths.get(recogFileName);
+
         byte[] data = new byte[0];
         try {
             data = Files.readAllBytes(path);
+            System.out.println("Recognising from file : " + recogFileName);
         } catch (IOException e1) {
             e1.printStackTrace();
         }
+
         ByteString audioBytes = ByteString.copyFrom(data);
 
         // Builds the sync recognize request
         RecognitionConfig config = RecognitionConfig.newBuilder()
                 .setEncoding(AudioEncoding.FLAC)
-                .setSampleRateHertz(8000)
-                .setLanguageCode("en-US")
+                .setSampleRateHertz(16000)
+                .setLanguageCode(languagePref)
+                .setEnableAutomaticPunctuation(true)
+                .setProfanityFilter(false)
+                .setModel("video")
+//                .setUseEnhanced(true)
                 .build();
         RecognitionAudio audio = RecognitionAudio.newBuilder()
                 .setContent(audioBytes)
@@ -325,6 +337,9 @@ public class Main extends Application {
 
         // Performs speech recognition on the audio file
         RecognizeResponse response = speechClient.recognize(config, audio);
+//        LongRunningRecognizeResponse response = null;
+//        response = speechClient.recognize(config, audio);
+
         List<SpeechRecognitionResult> results = response.getResultsList();
 
         for (SpeechRecognitionResult result : results) {
@@ -334,11 +349,14 @@ public class Main extends Application {
 //            for(SpeechRecognitionAlternative alternative: result.getAlternativesList()){
 //                System.out.printf("Transcription: %s%n", alternative.getTranscript());
 //            }
-            System.out.println(result.getAlternativesList().get(0).getTranscript());
-            return  result.getAlternativesList().get(0).getTranscript();
+            for(SpeechRecognitionAlternative alters : result.getAlternativesList() ){
+                System.out.println(alters.getTranscript());
+            }
         }
 
-        return "Retry";
+        if(results.size() >0)
+            return  results.get(0).getAlternativesList().get(0).getTranscript();
+        return "retry";
     }
 
     public static void record(){
@@ -347,10 +365,13 @@ public class Main extends Application {
             System.out.println("type: " + type.toString());
         }
 
-        Microphone mic = new Microphone(FLACFileWriter.FLAC);
-        File file = new File ("testfile2.flac");	//Name your file whatever you want
+        Microphone2 mic = new Microphone2(FLACFileWriter.FLAC);
+
+        File file = new File (alterNateFileName);	//Name your file whatever you want
+        System.out.println("Recording to File : " + alterNateFileName);
         try {
             mic.captureAudioToFile (file);
+
         } catch (Exception ex) {
             //Microphone not available or some other error.
             System.out.println ("ERROR: Microphone is not availible.");
@@ -360,9 +381,19 @@ public class Main extends Application {
     /* User records the voice here. Microphone starts a separate thread so do whatever you want
      * in the mean time. Show a recording icon or whatever.
      */
+
+        float timeElapsed = 0;//seconds elapsed
         while (started){
             try {
-                Thread.sleep (50);	//In our case, we'll just wait 5 seconds.
+
+                Thread.sleep (50);
+                timeElapsed += 0.05;
+                if(timeElapsed > 55){
+                    switchFiles();
+                    recognize1();
+                    mic.close();
+                    record();
+                }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -413,13 +444,14 @@ public class Main extends Application {
             @Override
             public void run() {
                 System.out.println("Recognizing ...");
-                final String recog = recognize();
+                recognizedText += recognize();
 
                 Platform.runLater(new Runnable() {
                     @Override
                     public void run() {
-                        ControllerRef.recognizedText.setText(recog);
+                        ControllerRef.recognizedText.setText(recognizedText);
                         ControllerRef.statusLabel.setText("Click the button to Start Listening");
+
                     }
                 });
                 System.out.println("Recognized ");
@@ -429,5 +461,38 @@ public class Main extends Application {
         bgThread.start();
     }
 
+    public static void switchFiles(){
+        String temp = alterNateFileName;
+        alterNateFileName = recogFileName;
+        recogFileName = temp;
+    }
+
+    public static void keepUpdatingVolume(){
+        Thread bgThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                MicrophoneAnalyzer mic = new MicrophoneAnalyzer(AudioFileFormat.Type.WAVE);
+                mic.open();
+                while(true){
+                    final double volume = mic.getAudioVolume();///100;
+                    System.out.println(volume);
+                    Platform.runLater(new Runnable() {
+                        @Override
+                        public void run() {
+                                ControllerRef.volumeBar.setProgress(volume);
+                        }
+                    });
+                    try {
+                        Thread.sleep(50);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+            }
+        });
+
+        bgThread.start();
+    }
 }
 

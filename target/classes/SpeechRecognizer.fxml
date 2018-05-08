@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ChoiceBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Menu?>
 <?import javafx.scene.control.MenuBar?>
 <?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.ProgressBar?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.SeparatorMenuItem?>
 <?import javafx.scene.control.TextArea?>
@@ -75,6 +77,13 @@
                   </TextArea>
                </content>
             </ScrollPane>
+            <ChoiceBox fx:id="langChoice" layoutX="189.0" layoutY="34.0" />
+            <Label layoutX="189.0" layoutY="14.0" text="Language">
+               <font>
+                  <Font size="14.0" />
+               </font>
+            </Label>
+            <ProgressBar fx:id="volumeBar" layoutX="408.0" layoutY="5.0" prefWidth="200.0" progress="0.0" />
       </children>
     </AnchorPane>
   </children>
