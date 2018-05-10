@@ -3,7 +3,11 @@ package sample;
 import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.image.ImageView;
 import javafx.scene.paint.Paint;
+
+
+import java.io.*;
 
 public class Controller {
     @FXML
@@ -20,6 +24,29 @@ public class Controller {
 
     @FXML
     public ProgressBar volumeBar;
+
+    @FXML
+    public Button summarizeButton;
+
+    @FXML
+    public TextArea summarizedText;
+
+    @FXML Label summarizeLabel;
+
+    @FXML
+    ImageView summarizeImage;
+
+    @FXML
+    ImageView recognizeImage;
+
+    @FXML
+    Label tagsText;
+
+    @FXML
+    Label recognizeLabel;
+
+    @FXML
+    Label tagsLabel;
 
     @FXML
     public void onButtonPressed(Event e){
@@ -42,6 +69,15 @@ public class Controller {
             statusLabel.setTextFill(Paint.valueOf("#049556"));
             Main.record1();
         }
+    }
+
+    @FXML
+    public void onSummarizeButtonPressed(Event e){
+
+//        File file = new File("input.txt");
+        Main.summarize();
+        Main.tagify();
+
     }
 
 

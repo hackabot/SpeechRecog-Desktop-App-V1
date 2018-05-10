@@ -1,7 +1,7 @@
 package sample;
 
-import com.darkprograms.speech.microphone.Microphone;
 import com.darkprograms.speech.microphone.MicrophoneAnalyzer;
+//import com.darkprograms.speech.microphone.Microphone;
 import com.darkprograms.speech.recognizer.GoogleResponse;
 import com.darkprograms.speech.recognizer.Recognizer;
 
@@ -12,12 +12,15 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.speech.v1p1beta1.*;
 import com.google.common.collect.Lists;
+import com.sun.prism.paint.Color;
 import javaFlacEncoder.FLACFileWriter;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.CacheHint;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -25,18 +28,19 @@ import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
+import javafx.scene.paint.Paint;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
 import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioSystem;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 
@@ -54,6 +58,7 @@ public class Main extends Application {
     public static SpeechClient speechClient;
     public static String buttonLabel = "Start Listening";
     public static String recognizedText = "";
+    public static CopyOnWriteArrayList<String> recognizedTextList;
     public static boolean started = false;
 
     public static String recogFileName = "testfile2.flac";
@@ -66,21 +71,25 @@ public class Main extends Application {
 
     @Override
     public void start(final Stage primaryStage) throws Exception{
+        recognizedTextList = new CopyOnWriteArrayList<>();
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/SpeechRecognizer.fxml"));
         Parent root = loader.load();
-                //FXMLLoader.load(getClass().getResource("/SpeechRecognizer.fxml"));
 
+                //FXMLLoader.load(getClass().getResource("/SpeechRecognizer.fxml"));
         primaryStage.setTitle("Speech Recogniser");
         ControllerRef = loader.getController();
+
         ControllerRef.langChoice.getItems().addAll("en-US", "en-IN", "en-GB", "en-CA", "en-NZ");
         ControllerRef.langChoice.setValue("en-US");
-        primaryStage.setScene(new Scene(root, 800, 600));
+        ControllerRef.summarizeImage.setCache(true);
+        ControllerRef.summarizeImage.setCacheHint(CacheHint.SPEED);
+        primaryStage.setScene(new Scene(root, 650, 630, Paint.valueOf("black")));
         primaryStage.show();
 
-        keepUpdatingVolume();
+//        keepUpdatingVolume();
 
 
-        ControllerRef.recognizedText.setText("Click on START Listening to get started");
+//        ControllerRef.recognizedText.setText("Click on START Listening to get started");
 
 //        Main.initialise();
 
@@ -95,23 +104,6 @@ public class Main extends Application {
 //        lbl.setText("Not Listening");
 
         Button button = (Button) loader.getNamespace().get("button1");
-
-
-//        Thread bgThread = new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//                //        buildUI(primaryStage);
-//                System.out.println("Started");
-////        ambientListening2();
-//                initialise();
-//                record();
-//                recognizedText = recognize();
-//                Main.buttonLabel = "Stop Listening";
-//
-//            }
-//        });
-
-//        bgThread.start();
 
     }
 
@@ -202,106 +194,6 @@ public class Main extends Application {
         launch(args);
     }
 
-    private static void ambientListening() throws Exception{
-
-        String filename = "tarunaudio.wav";//Your Desired FileName
-        MicrophoneAnalyzer mic = new MicrophoneAnalyzer(AudioFileFormat.Type.WAVE);
-        mic.open();
-        mic.captureAudioToFile(filename);
-        final int THRESHOLD = 10;//YOUR THRESHOLD VALUE.
-        int ambientVolume = mic.getAudioVolume();//
-        System.out.println("Ambient volume: " + ambientVolume);
-        int speakingVolume = -2;
-        boolean speaking = false;
-        float seconds = 0;
-        while(true){
-            int volume = mic.getAudioVolume();
-            System.out.println(volume);
-//            if(volume>ambientVolume+THRESHOLD){
-//                speakingVolume = volume;
-//                speaking = true;
-//                Thread.sleep(1000);
-//                System.out.println("SPEAKING");
-//            }
-//            if(speaking && volume+THRESHOLD<speakingVolume){
-//                break;
-//            }
-            Thread.sleep(200);//Your refreshRate
-            seconds += 0.2;
-
-           //Recording for 5 seconds
-            System.out.println("Seconds : " + seconds);
-            if(seconds > 1)
-                break;
-        }
-        mic.close();
-        //You can also measure the volume across the entire file if you want
-        //to be resource intensive.
-//        if(!speaking){
-//            ambientListening();
-//        }
-        Recognizer rec = new Recognizer(Recognizer.Languages.ENGLISH_US, "AIzaSyC7W1jE3C1S4LrEaHSsyzagqqgNVzst82w");
-        GoogleResponse out = rec.getRecognizedDataForWave(filename);
-        System.out.println(out.getResponse());
-        ambientListening();
-    }
-
-    public static void ambientListening2(){
-        // Mixer.Info[] infoArray = AudioSystem.getMixerInfo();
-        // for(Mixer.Info info : infoArray) {
-        //    System.out.println("info: " + info.toString());
-        // }
-        AudioFileFormat.Type[] typeArray = getAudioFileTypes();
-        for(AudioFileFormat.Type type : typeArray) {
-            System.out.println("type: " + type.toString());
-        }
-
-        Microphone mic = new Microphone(FLACFileWriter.FLAC);
-        File file = new File ("testfile2.flac");	//Name your file whatever you want
-        try {
-            mic.captureAudioToFile (file);
-        } catch (Exception ex) {
-            //Microphone not available or some other error.
-            System.out.println ("ERROR: Microphone is not availible.");
-            ex.printStackTrace ();
-        }
-
-    /* User records the voice here. Microphone starts a separate thread so do whatever you want
-     * in the mean time. Show a recording icon or whatever.
-     */
-        try {
-            System.out.println ("Recording...");
-            Thread.sleep (5000);	//In our case, we'll just wait 5 seconds.
-            mic.close ();
-        } catch (InterruptedException ex) {
-            ex.printStackTrace ();
-        }
-
-        mic.close ();		//Ends recording and frees the resources
-        System.out.println ("Recording stopped.");
-
-        Recognizer recognizer = new Recognizer (Recognizer.Languages.ENGLISH_US, "");
-        //Although auto-detect is available, it is recommended you select your region for added accuracy.
-        try {
-            int maxNumOfResponses = 4;
-            System.out.println("Sample rate is: " + (int) mic.getAudioFormat().getSampleRate());
-            GoogleResponse response = recognizer.getRecognizedDataForFlac (file, maxNumOfResponses, (int) mic.getAudioFormat().getSampleRate ());
-            System.out.println ("Google Response: " + response.getResponse ());
-            System.out.println ("Google is " + Double.parseDouble (response.getConfidence ()) * 100 + "% confident in" + " the reply");
-            System.out.println ("Other Possible responses are: ");
-            for (String s:response.getOtherPossibleResponses ()) {
-                System.out.println ("\t" + s);
-            }
-        }
-        catch (Exception ex) {
-            // TODO Handle how to respond if Google cannot be contacted
-            System.out.println ("ERROR: Google cannot be contacted");
-            ex.printStackTrace ();
-        }
-
-        file.deleteOnExit ();	//Deletes the file as it is no longer necessary.
-    }
-
     public static String recognize() {
 
         // The path to the audio file to transcribe
@@ -327,7 +219,7 @@ public class Main extends Application {
                 .setLanguageCode(languagePref)
                 .setEnableAutomaticPunctuation(true)
                 .setProfanityFilter(false)
-                .setModel("video")
+//                .setModel("video")
 //                .setUseEnhanced(true)
                 .build();
         RecognitionAudio audio = RecognitionAudio.newBuilder()
@@ -342,6 +234,8 @@ public class Main extends Application {
 
         List<SpeechRecognitionResult> results = response.getResultsList();
 
+        StringBuilder stbl = new StringBuilder();
+
         for (SpeechRecognitionResult result : results) {
             // There can be several alternative transcripts for a given chunk of speech.
             // Just use the
@@ -349,13 +243,15 @@ public class Main extends Application {
 //            for(SpeechRecognitionAlternative alternative: result.getAlternativesList()){
 //                System.out.printf("Transcription: %s%n", alternative.getTranscript());
 //            }
+            stbl.append(result.getAlternativesList().get(0).getTranscript());
             for(SpeechRecognitionAlternative alters : result.getAlternativesList() ){
                 System.out.println(alters.getTranscript());
             }
         }
 
         if(results.size() >0)
-            return  results.get(0).getAlternativesList().get(0).getTranscript();
+            return stbl.toString();
+            //  return  results.get(0).getAlternativesList().get(0).getTranscript();
         return "retry";
     }
 
@@ -365,7 +261,11 @@ public class Main extends Application {
             System.out.println("type: " + type.toString());
         }
 
+
+
         Microphone2 mic = new Microphone2(FLACFileWriter.FLAC);
+
+
 
         File file = new File (alterNateFileName);	//Name your file whatever you want
         System.out.println("Recording to File : " + alterNateFileName);
@@ -443,18 +343,47 @@ public class Main extends Application {
         Thread bgThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                System.out.println("Recognizing ...");
-                recognizedText += recognize();
 
                 Platform.runLater(new Runnable() {
                     @Override
                     public void run() {
-                        ControllerRef.recognizedText.setText(recognizedText);
-                        ControllerRef.statusLabel.setText("Click the button to Start Listening");
+                        ControllerRef.recognizeImage.setVisible(true);
+                        ControllerRef.recognizeLabel.setText("Recognizing...");
+                    }
+                });
+
+                System.out.println("Recognizing ...");
+                recognizedTextList.add(recognize());
+//                synchronized (recognizedText) {
+//                    recognizedText += recognize();
+//                }
+
+                Platform.runLater(new Runnable() {
+                    @Override
+                    public void run() {
+//                        synchronized (recognizedText) {
+//                            ControllerRef.recognizedText.setText(recognizedText);
+//                        }
+                        Iterator itr = recognizedTextList.listIterator();
+                        StringBuilder stbl = new StringBuilder();
+                        while (itr.hasNext()){
+                            stbl.append(itr.next());
+                        }
+                        ControllerRef.recognizedText.setText(stbl.toString());
+                        ControllerRef.recognizeLabel.setText("Recognized Text");
+                        ControllerRef.statusLabel.setTextFill(Paint.valueOf("Green"));
+                        ControllerRef.statusLabel.setText("Recognized");
 
                     }
                 });
                 System.out.println("Recognized ");
+
+                Platform.runLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        ControllerRef.recognizeImage.setVisible(false);
+                    }
+                });
             }
         });
 
@@ -474,16 +403,17 @@ public class Main extends Application {
                 MicrophoneAnalyzer mic = new MicrophoneAnalyzer(AudioFileFormat.Type.WAVE);
                 mic.open();
                 while(true){
-                    final double volume = mic.getAudioVolume();///100;
-                    System.out.println(volume);
+                    double volume = mic.getAudioVolume();
+                    final double volume2 = volume/(14*(60-volume));
+//                    System.out.println(volume2);
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
-                                ControllerRef.volumeBar.setProgress(volume);
+                                ControllerRef.volumeBar.setProgress(volume2);
                         }
                     });
                     try {
-                        Thread.sleep(50);
+                        Thread.sleep(1);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -494,5 +424,142 @@ public class Main extends Application {
 
         bgThread.start();
     }
+
+    public static void summarize(){
+        Thread bgThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("summarizing ...");
+                Platform.runLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        ControllerRef.summarizeLabel.setText("Summarizing...");
+                        ControllerRef.summarizeImage.setVisible(true);
+                        ControllerRef.statusLabel.setText("Summarizing");
+                    }
+                });
+                FileWriter writer = null;
+                try {
+                    FileWriter fileWriter = new FileWriter("input.txt");
+                    PrintWriter printWriter = new PrintWriter(fileWriter);
+//                    synchronized (recognizedText) {
+//                        printWriter.print(Main.recognizedText);
+//                    }
+                    Iterator itr = recognizedTextList.listIterator();
+                    StringBuilder stbl = new StringBuilder();
+                    while (itr.hasNext()){
+                        stbl.append(itr.next());
+                    }
+                    printWriter.print(stbl.toString());
+
+                    fileWriter.close();
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                    return;
+                }
+
+                String pythonScriptPath = "summarizer.py";
+                String[] cmd = new String[2];
+                cmd[0] = "python"; // check version of installed python: python -V
+                cmd[1] = pythonScriptPath;
+                Runtime rt = Runtime.getRuntime();
+                Process pr = null;
+                try {
+                    pr = rt.exec(cmd);
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+
+// retrieve output from python script
+                BufferedReader bfr = new BufferedReader(new InputStreamReader(pr.getInputStream()));
+                String line = "";
+                String line2 = "";
+                try {
+                    while ((line = bfr.readLine()) != null) {
+// display each output line form python script
+                        line2 += line;
+                    }
+                }catch (Exception e2){
+                    e2.printStackTrace();
+                    return;
+                }
+
+                final String line3 = line2;
+                Platform.runLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        ControllerRef.summarizedText.setText(line3);
+                        ControllerRef.summarizeLabel.setText("Summarized Text");
+                        ControllerRef.summarizeImage.setVisible(false);
+                        ControllerRef.statusLabel.setText("Summarized");
+                    }
+                });
+                System.out.println("Summarized ");
+            }
+        });
+
+        bgThread.start();
+
+    }
+
+    public static void tagify(){
+        Thread bgThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("summarizing ...");
+                Platform.runLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        ControllerRef.summarizeLabel.setText("Summarizing...");
+                        ControllerRef.statusLabel.setText("Summarizing");
+                    }
+                });
+                FileWriter writer = null;
+
+                String pythonScriptPath = "tags.py";
+                String[] cmd = new String[2];
+                cmd[0] = "python"; // check version of installed python: python -V
+                cmd[1] = pythonScriptPath;
+//        cmd[1] = "-h";
+
+// create runtime to execute external command
+                Runtime rt = Runtime.getRuntime();
+                Process pr = null;
+                try {
+                    pr = rt.exec(cmd);
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+
+// retrieve output from python script
+                BufferedReader bfr = new BufferedReader(new InputStreamReader(pr.getInputStream()));
+                String line = "";
+                String line2 = "";
+                try {
+                    while ((line = bfr.readLine()) != null) {
+// display each output line form python script
+                        line2 += line;
+                    }
+                }catch (Exception e2){
+                    e2.printStackTrace();
+                    return;
+                }
+
+                final String line3 = "#" + line2.replace(",", "\n#");
+                Platform.runLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        ControllerRef.tagsText.setText(line3);
+                        ControllerRef.tagsLabel.setVisible(true);
+                    }
+                });
+                System.out.println("Summarized ");
+            }
+        });
+
+        bgThread.start();
+    }
+
+
 }
 
